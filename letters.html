@@ -1,0 +1,199 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تعليم الحروف</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts (Noto Sans Arabic) -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- i18next CDN for Translation -->
+  <script src="https://unpkg.com/i18next@23.15.1/dist/umd/i18next.min.js"></script>
+  <!-- Font Awesome for Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Noto Sans Arabic', sans-serif;
+      background-color: #fafafa;
+    }
+    .widget {
+      background: white;
+      border-radius: 12px;
+      border: 1px solid #e5e5e5;
+      padding: 16px;
+    }
+    .letter-card {
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .letter-card:hover {
+      transform: scale(1.1);
+    }
+    .learn-btn {
+      transition: all 0.3s ease;
+    }
+    .learn-btn:hover {
+      transform: scale(1.05);
+    }
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-top: 1px solid #e5e5e5;
+      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+      z-index: 50;
+    }
+    .nav-btn {
+      transition: all 0.3s ease;
+    }
+    .nav-btn:hover {
+      transform: scale(1.1);
+    }
+  </style>
+</head>
+<body class="min-h-screen pb-20">
+  <!-- Navbar -->
+  <nav class="bg-white text-gray-800 p-4 shadow-sm border-b">
+    <div class="container mx-auto flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-gradient bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">تعليم الحروف</h1>
+      <div>
+        <select id="languageSelect" class="bg-gray-100 text-gray-800 p-2 rounded border">
+          <option value="ar">العربية</option>
+          <option value="en">English</option>
+          <option value="fr">Français</option>
+        </select>
+        <a href="index.html" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg ml-2">العودة</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="container mx-auto p-4">
+    <div class="widget">
+      <h2 data-i18n="letterLearning" class="text-xl font-bold text-gray-800 mb-4">تعليم الحروف</h2>
+      <div id="letterCards" class="grid grid-cols-4 gap-4 mb-4"></div>
+      <button id="playLetterSound" class="bg-blue-600 text-white px-4 py-2 rounded-lg learn-btn">تشغيل صوت الحرف</button>
+      <p id="letterFeedback" class="mt-4 text-gray-600"></p>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation Bar -->
+  <div class="bottom-nav flex justify-around items-center py-3">
+    <a href="stats.html" class="nav-btn text-gray-600" title="إحصائيات"><i class="fas fa-chart-bar text-xl"></i></a>
+    <a href="notifications.html" class="nav-btn text-gray-600" title="إشعارات"><i class="fas fa-bell text-xl"></i></a>
+    <a href="translate.html" class="nav-btn text-gray-600" title="ترجمة"><i class="fas fa-language text-xl"></i></a>
+    <a href="language.html" class="nav-btn text-gray-600" title="تعليم اللغة"><i class="fas fa-book-open text-xl"></i></a>
+    <a href="letters.html" class="nav-btn text-blue-600" title="تعليم الحروف"><i class="fas fa-font text-xl"></i></a>
+    <a href="contact.html" class="nav-btn text-gray-600" title="تواصل"><i class="fas fa-envelope text-xl"></i></a>
+  </div>
+
+  <script>
+    // i18next Initialization
+    i18next.init({
+      lng: 'ar',
+      resources: {
+        ar: { translation: { letterLearning: 'تعليم الحروف' } },
+        en: { translation: { letterLearning: 'Letter Learning' } },
+        fr: { translation: { letterLearning: 'Apprentissage des lettres' } }
+      }
+    }, function(err, t) {
+      updateContent();
+    });
+
+    // Update content based on language
+    function updateContent() {
+      document.querySelectorAll('[data-i18n]').forEach(element => {
+        element.textContent = i18next.t(element.getAttribute('data-i18n'));
+      });
+    }
+
+    // Language Switcher
+    document.getElementById('languageSelect').addEventListener('change', (e) => {
+      i18next.changeLanguage(e.target.value, () => {
+        updateContent();
+        generateLetterCards();
+      });
+    });
+
+    // Letter Learning: Interactive Cards
+    const letters = {
+      ar: ['أ', 'ب', 'ت', 'ث'],
+      en: ['A', 'B', 'C', 'D'],
+      fr: ['A', 'B', 'C', 'D']
+    };
+
+    function generateLetterCards() {
+      const lang = i18next.language;
+      const letterCards = document.getElementById('letterCards');
+      letterCards.innerHTML = '';
+      letters[lang].forEach(letter => {
+        const card = document.createElement('div');
+        card.className = 'letter-card bg-blue-50 p-4 rounded-lg text-center text-2xl font-bold text-blue-600';
+        card.textContent = letter;
+        card.addEventListener('click', () => {
+          document.getElementById('letterFeedback').textContent = `لقد اخترت الحرف: ${letter}`;
+          const utterance = new SpeechSynthesisUtterance(letter);
+          utterance.lang = lang;
+          window.speechSynthesis.speak(utterance);
+        });
+        letterCards.appendChild(card);
+      });
+    }
+
+    // Play Letter Sound Button
+    document.getElementById('playLetterSound').addEventListener('click', () => {
+      const lang = i18next.language;
+      const randomLetter = letters[lang][Math.floor(Math.random() * letters[lang].length)];
+      const utterance = new SpeechSynthesisUtterance(randomLetter);
+      utterance.lang = lang;
+      window.speechSynthesis.speak(utterance);
+      document.getElementById('letterFeedback').textContent = `الصوت للحرف: ${randomLetter}`;
+    });
+
+    // Initialize
+    generateLetterCards();
+  </script>
+</body>
+</html>
