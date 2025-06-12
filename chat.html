@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>دردشة ذكاء اصطناعي</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .chat-container {
+            width: 90%;
+            max-width: 700px;
+            background-color: #fff;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 85vh;
+        }
+        .chat-header {
+            background-color: #1a73e8;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 1.6em;
+            font-weight: bold;
+        }
+        .chat-box {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background-color: #f9f9fb;
+        }
+        .message {
+            max-width: 75%;
+            padding: 12px 18px;
+            border-radius: 12px;
+            line-height: 1.6;
+            word-wrap: break-word;
+        }
+        .user-message {
+            background-color: #1a73e8;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+        .bot-message {
+            background-color: #e8ecef;
+            color: #333;
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+        }
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            align-self: center;
+            text-align: center;
+        }
+        .input-container {
+            display: flex;
+            padding: 15px;
+            background-color: #fff;
+            border-top: 1px solid #ddd;
+        }
+        #user-input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            margin-left: 10px;
+            font-size: 1em;
+            outline: none;
+        }
+        #send-btn {
+            padding: 12px 25px;
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s;
+        }
+        #send-btn:hover {
+            background-color: #1557b0;
+        }
+        #send-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        @media (max-width: 600px) {
+            .chat-container {
+                width: 100%;
+                height: 100vh;
+                border-radius: 0;
+            }
+            .chat-box {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">دردشة مع الذكاء الاصطناعي</div>
+        <div class="chat-box" id="chat-box"></div>
+        <div class="input-container">
+            <input type="text" id="user-input" placeholder="اكتب رسالتك هنا..." autocomplete="off">
+            <button id="send-btn">إرسال</button>
+        </div>
+    </div>
+
+    <script>
+        const API_KEY = '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';
+        const API_URL = 'https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill';
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        function addMessage(content, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', type);
+            messageDiv.textContent = content;
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            addMessage(message, 'user-message');
+            userInput.value = '';
+            sendBtn.disabled = true;
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${API_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        inputs: message,
+                        parameters: {
+                            max_length: 100,
+                            min_length: 10
+                        }
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(`فشل في الاتصال بالـ API: ${response.status} - ${data.error || 'غير معروف'}`);
+                }
+
+                const botReply = data[0]?.generated_text || 'عذرًا، لم أتلق ردًا صالحًا من النموذج.';
+                addMessage(botReply, 'bot-message');
+            } catch (error) {
+                addMessage(`حدث خطأ: ${error.message}`, 'error-message');
+                console.error('API Error:', error);
+            } finally {
+                sendBtn.disabled = false;
+            }
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    </script>
+</body>
+</html>
