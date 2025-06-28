@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>مترجم ذكي</title>
+  <style>
+    * {
+      margin: 0; padding: 0;
+      box-sizing: border-box;
+      font-family: 'CustomArabicFont', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-focus-ring-color: transparent;
+      outline: none;
+    }
+    @font-face {
+      font-family: 'CustomArabicFont';
+      src: url('CustomArabicFont.ttf') format('truetype');
+    }
+    body {
+      background-color: #f1f1f1;
+      color: #000;
+      direction: rtl;
+      text-align: center;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      font-size: 18px;
+      padding: 10px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      background-color: #E5E5E5;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      font-weight: bold;
+      font-size: 22px;
+      color: #222;
+    }
+    .star-icon {
+      font-size: 28px;
+      color: #444;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .input-group {
+      position: relative;
+      width: 100%;
+    }
+    textarea {
+      width: 100%;
+      height: 100px;
+      font-size: 25px;
+      padding: 15px 50px 15px 15px;
+      border: none;
+      border-radius: 15px;
+      resize: vertical;
+      color: #4C4C4C;
+      background-color: transparent;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      font-family: 'CustomArabicFont', sans-serif;
+      direction: rtl;
+    }
+    textarea:focus {
+      box-shadow: 0 0 10px #3b82f6;
+      background-color: #fff;
+    }
+    /* زر الميكروفون داخل حقل الإدخال الأول */
+    .mic-btn {
+      position: absolute;
+      top: 50%;
+      right: 12px;
+      transform: translateY(-50%);
+      width: 30px;
+      height: 30px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      fill: #444;
+      transition: fill 0.3s ease;
+      padding: 0;
+    }
+    .mic-btn.recording svg {
+      fill: red;
+    }
+    .mic-btn:hover svg {
+      fill: #1e40af;
+    }
+    /* زر النسخ داخل الحقل */
+    .copy-btn {
+      position: absolute;
+      top: 50%;
+      left: 12px;
+      transform: translateY(-50%);
+      width: 30px;
+      height: 30px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      fill: #444;
+      transition: fill 0.3s ease;
+      padding: 0;
+    }
+    .copy-btn:hover svg {
+      fill: #1e40af;
+    }
+    /* اللغة وأزرار تبديل */
+    .language-selection {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      margin: 10px 0;
+    }
+    select {
+      border: none;
+      border-radius: 39px;
+      padding: 10px 20px;
+      font-size: 17px;
+      background-color: #E5E5E5;
+      cursor: pointer;
+      min-width: 130px;
+      text-align-last: center;
+      color: #333;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      direction: rtl;
+    }
+    /* زر تبديل اللغات */
+    #swapLanguages {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 5px;
+      width: 40px;
+      height: 40px;
+      transition: transform 0.3s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    #swapLanguages:hover {
+      transform: rotate(180deg);
+    }
+    /* أيقونة السهم */
+    #swapLanguages svg {
+      width: 30px;
+      height: 30px;
+      fill: #333;
+    }
+    /* الأيقونات السفلية */
+    .bottom-icons {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 10px 0;
+      background-color: #f1f1f1;
+      border-radius: 12px;
+      margin-top: 10px;
+    }
+    .icon-btn {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: none;
+      background-size: cover;
+      background-position: center;
+      cursor: pointer;
+    }
+    /* زر نسخ النص أسفل الحقل */
+    .paste-btn {
+      margin: 10px auto;
+      padding: 10px 20px;
+      font-size: 18px;
+      border: none;
+      border-radius: 30px;
+      background-color: #3b82f6;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(59,130,246,0.4);
+      transition: background-color 0.3s ease;
+    }
+    .paste-btn:hover {
+      background-color: #2563eb;
+    }
+    /* رسالة الخطأ */
+    #error {
+      color: red;
+      text-align: center;
+      margin-top: 10px;
+      min-height: 20px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="user-profile"><img7 src="#" alt="User Profile"/></div>
+    <div>مترجم ذكي</div>
+    <div class="star-icon">★</div>
+  </header>
+
+  <div class="container">
+    <!-- حقل الإدخال العربي مع أزرار الميكروفون والنسخ -->
+    <div class="input-group">
+      <textarea id="arabicInput" placeholder="إدخال النص بالعربية"></textarea>
+      <button id="micBtn" class="mic-btn" title="تسجيل صوتي">
+        <!-- أيقونة ميكروفون SVG -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" >
+          <path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 14 0h-2zM11 19h2v3h-2z"/>
+        </svg>
+      </button>
+      <button class="copy-btn" title="نسخ النص" data-target="arabicInput">
+        <!-- أيقونة نسخ SVG -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" >
+          <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- حقل الترجمة مع زر النسخ -->
+    <div class="input-group">
+      <textarea id="kurdishOutput" placeholder="الترجمة" readonly></textarea>
+      <button class="copy-btn" title="نسخ الترجمة" data-target="kurdishOutput">
+        <!-- أيقونة نسخ SVG -->
+        	
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" >
+          <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- اختيار اللغات وزر التبديل -->
+    <div class="language-selection">
+      <select id="inputLanguage" aria-label="اختر لغة الإدخال">
+        <option value="ar" selected>العربية</option>
+        <option value="ku">اللغة الكردية</option>
+      </select>
+      <button id="swapLanguages" title="تبديل اللغات">
+        <!-- أيقونة السهم -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path d="M7 10l5 5 5-5H7z"/>
+        </svg>
+      </button>
+      <select id="outputLanguage" aria-label="اختر لغة الإخراج">
+        <option value="ku">اللغة الكردية</option>
+        <option value="ar" selected>الكردية</option>
+      </select>
+    </div>
+
+    <div id="error"></div>
+  </div> 
+ 
+  <script>
+    // مثال فقط: استمع للزر وغيّر حالة الميكروفون (تسجيل/إيقاف)
+    const micBtn = document.getElementById('micBtn');
+    micBtn.addEventListener('click', () => {
+      micBtn.classList.toggle('recording');
+      // هنا تضع كود تسجيل الصوت الخاص بك
+    });
+
+    // نسخ النصوص عند الضغط على زر النسخ
+    document.querySelectorAll('.copy-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.getAttribute('data-target');
+        const textArea = document.getElementById(targetId);
+        textArea.select();
+        textArea.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(textArea.value).then(() => {
+          alert('تم نسخ النص');
+        });
+      });
+    });
+
+    // تبديل اللغات وحقول الإدخال
+    const inputLangSelect = document.getElementById('inputLanguage');
+    const outputLangSelect = document.getElementById('outputLanguage');
+    const arabicInput = document.getElementById('arabicInput');
+    const kurdishOutput = document.getElementById('kurdishOutput');
+    const swapBtn = document.getElementById('swapLanguages');
+
+    swapBtn.addEventListener('click', () => {
+      // تبديل القيم في القوائم
+      const tempLang = inputLangSelect.value;
+      inputLangSelect.value = outputLangSelect.value;
+      outputLangSelect.value = tempLang;
+
+      // تبديل النصوص في الحقول
+      const tempText = arabicInput.value;
+      arabicInput.value = kurdishOutput.value;
+      kurdishOutput.value = tempText;
+
+      arabicInput.focus();
+    });
+  </script>
+</body>
+</html> 
+
+
+
+
+    <script>
+    const API_KEY = "AIzaSyBFvJQp99Yw2gtqupq7ITlZ-_HMi_talRQ";
+    const URL = "https://translation.googleapis.com/language/translate/v2";
+
+    const kurdishToArabicMap = {
+      'a': 'ا', 'b': 'ب', 'c': 'ج', 'ç': 'چ', 'd': 'د', 'e': 'ا', 'ê': 'ي',
+      'f': 'ف', 'g': 'گ', 'h': 'ه', 'i': 'ە', 'î': 'ي', 'j': 'ژ', 'k': 'ك',
+      'l': 'ل', 'ł': 'ل', 'm': 'م', 'n': 'ن', 'o': 'و', 'p': 'پ', 'q': 'ق',
+      'r': 'ر', 'ř': 'ر', 's': 'س', 'ş': 'ش', 't': 'ط', 'u': 'و', 'û': 'وو',
+      'v': 'ف', 'w': 'و', 'x': 'خ', 'y': 'ي', 'z': 'ز', ' ': ' ', '.': '.',
+      ',': '،', '?': '؟', '!': '!'
+    };
+
+    let wordData = { replacements: {}, corrections: {} };
+    async function loadWordData() {
+      try {
+        const response = await fetch('word.json', { headers: { 'Accept': 'application/json' } });
+        if (!response.ok) throw new Error('https://raw.githubusercontent.com/ezidicoding/ezidicode.com/refs/heads/main/e-ckb.json');
+        wordData = await response.json();
+      } catch (error) {
+        console.error('Error loading word.json:', error);
+        document.getElementById('error').textContent = 'فشل تحميل ملف التصحيح. الترجمة قد تكون غير دقيقة.';
+        document.getElementById('error').style.display = 'block';
+      }
+    }
+
+    function convertKurdishToArabicScript(text) {
+      return text
+        .split('')
+        .map(char => kurdishToArabicMap[char.toLowerCase()] || char)
+        .join('');
+    }
+
+    async function applyWordReplacements(inputText, translatedText) {
+      let result = translatedText;
+      const sortedKeys = Object.keys(wordData.replacements).sort((a, b) => b.length - a.length);
+
+      const wordTranslations = {};
+      for (const arabic of sortedKeys) {
+        if (inputText.toLowerCase().includes(arabic.toLowerCase())) {
+          try {
+            const response = await fetch(`${URL}?key=${API_KEY}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                q: arabic,
+                source: 'ar',
+                target: 'ckb',
+                format: 'text'
+              })
+            });
+            if (response.ok) {
+              const data = await response.json();
+              if (data.data && data.data.translations && data.data.translations[0]) {
+                wordTranslations[arabic.toLowerCase()] = data.data.translations[0].translatedText;
+              }
+            }
+          } catch (error) {
+            console.error(`Error translating "${arabic}":`, error);
+          }
+        }
+      }
+
+      for (const arabic of sortedKeys) {
+        const kurdish = wordData.replacements[arabic];
+        const apiTranslation = wordTranslations[arabic.toLowerCase()];
+        if (apiTranslation) {
+          const regex = new RegExp(apiTranslation.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+          result = result.replace(regex, kurdish);
+        }
+      }
+
+      return result;
+    }
+
+    function applyKurdishCorrections(translatedText) {
+      let result = translatedText;
+      const sortedKeys = Object.keys(wordData.corrections).sort((a, b) => b.length - a.length);
+
+      for (const incorrect of sortedKeys) {
+        const corrected = wordData.corrections[incorrect];
+        const regex = new RegExp(incorrect.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+        result = result.replace(regex, corrected);
+      }
+
+      return result;
+    }
+
+    function debounce(func, wait) {
+      let timeout;
+      return function (...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+      };
+    }
+
+    async function translateText(arabicInput) {
+      const kurdishOutput = document.getElementById('kurdishOutput');
+      const errorElement = document.getElementById('error');
+
+      if (!arabicInput) {
+        errorElement.textContent = 'الرجاء إدخال نص بالعربية للترجمة.';
+        errorElement.style.display = 'block';
+        kurdishOutput.value = '';
+        return;
+      }
+
+      try {
+        const response = await fetch(`${URL}?key=${API_KEY}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            q: arabicInput,
+            source: 'ar',
+            target: 'ckb',
+            format: 'text'
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('فشل الاتصال بالخادم أو المفتاح غير صالح.');
+        }
+
+        const data = await response.json();
+        if (data.data && data.data.translations && data.data.translations[0]) {
+          let translatedText = data.data.translations[0].translatedText;
+          translatedText = await applyWordReplacements(arabicInput, translatedText);
+          translatedText = applyKurdishCorrections(translatedText);
+          const arabicScriptText = convertKurdishToArabicScript(translatedText);
+          kurdishOutput.value = arabicScriptText;
+          errorElement.style.display = 'none';
+        } else {
+          throw new Error('لم يتم العثور على ترجمة.');
+        }
+      } catch (error) {
+        errorElement.textContent = error.message || 'حدث خطأ أثناء الترجمة.';
+        errorElement.style.display = 'block';
+        kurdishOutput.value = '';
+      }
+    }
+
+    function copyText(elementId) {
+      const text = document.getElementById(elementId).value;
+      if (text) {
+        navigator.clipboard.writeText(text).then(() => {
+          alert('تم نسخ النص!');
+        }).catch(err => {
+          console.error('فشل نسخ النص:', err);
+        });
+      }
+    }
+
+    const recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let isRecognizing = false;
+
+    if (recognition) {
+      const recognizer = new recognition();
+      recognizer.lang = 'ar-SA';
+      recognizer.interimResults = true;
+      recognizer.continuous = true;
+
+      recognizer.onresult = (event) => {
+        let interim = '';
+        let final = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            final += transcript + ' ';
+          } else {
+            interim = transcript;
+          }
+        }
+        const arabicInput = document.getElementById('arabicInput');
+        arabicInput.value = final + interim;
+        translateText(arabicInput.value.trim());
+      };
+
+      recognizer.onerror = (event) => {
+        console.error('خطأ في التسجيل الصوتي:', event.error);
+        document.getElementById('error').textContent = 'فشل التسجيل الصوتي. تأكد من إعدادات الميكروفون.';
+        document.getElementById('error').style.display = 'block';
+        stopRecognition();
+      };
+
+      recognizer.onend = () => {
+        if (isRecognizing) {
+          recognizer.start();
+        }
+      };
+
+      function startRecognition() {
+        isRecognizing = true;
+        recognizer.start();
+        document.getElementById('micBtn').classList.add('recording');
+      }
+
+      function stopRecognition() {
+        isRecognizing = false;
+        recognizer.stop();
+        document.getElementById('micBtn').classList.remove('recording');
+      }
+
+      document.getElementById('micBtn').addEventListener('click', () => {
+        if (!isRecognizing) {
+          startRecognition();
+        } else {
+          stopRecognition();
+        }
+      });
+    } else {
+      document.getElementById('micBtn').style.display = 'none';
+      console.warn('متصفحك لا يدعم خاصية التسجيل الصوتي.');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadWordData();
+      const arabicInput = document.getElementById('arabicInput');
+      const arabicContainer = arabicInput.closest('.textarea-container');
+      const kurdishOutput = document.getElementById('kurdishOutput');
+      const kurdishContainer = kurdishOutput.closest('.textarea-container');
+
+      arabicInput.addEventListener('focus', () => arabicContainer.classList.add('focused'));
+      arabicInput.addEventListener('blur', () => arabicContainer.classList.remove('focused'));
+      kurdishOutput.addEventListener('focus', () => kurdishContainer.classList.add('focused'));
+      kurdishOutput.addEventListener('blur', () => kurdishContainer.classList.remove('focused'));
+
+      arabicInput.addEventListener('input', debounce((e) => {
+        translateText(e.target.value.trim());
+      }, 500));
+    });
+    
+  </script>
+</body> 
+</html>  
